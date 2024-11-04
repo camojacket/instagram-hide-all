@@ -72,8 +72,30 @@ def followers():
     return follower_users
 
 
+def following():
+    global api
+    following_users = []
+    rank_token = api.generate_uuid()
+    results = api.user_following(api.authenticated_user_id, rank_token)
+    following_users.extend(results.get('users', []))
+    next_max_id = results.get('next_max_id')
+    while next_max_id and len(following_users) <= 20000:
+        results = api.user_following(api.authenticated_user_id, rank_token, max_id=next_max_id)
+        following_users.extend(results.get('users', []))
+        next_max_id = results.get('next_max_id')
+    return following_users
+
+
+def unfollownonfollowers():
+    global api
+    return list_diff(following_ids(), follower_ids())
+
+
 def follower_ids():
     return list(map(lambda i: i['pk'], followers()))
+
+def following_ids():
+    return list(map(lambda i: i['pk'], following()))
 
 
 def safe_ids():
@@ -134,8 +156,8 @@ def main():
     except:
         if os.path.exists("data.bin"):
             os.remove("data.bin")
-        username = input('Your username:')
-        password = getpass.getpass('Your password:')
+        username = ""#input('Your username:')
+        password = ""#getpass.getpass('Your password:')
         api = Client(username, password)
 
     warnings.simplefilter("ignore")
@@ -150,6 +172,8 @@ def main():
         unhide_all()
     elif command == 'reset':
         reset()
+    elif command == 'nonfollowing':
+        print(len(unfollownonfollowers()))
     else:
         show_help()
 
